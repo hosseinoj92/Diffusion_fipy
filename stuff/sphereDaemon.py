@@ -1,0 +1,48 @@
+from __future__ import unicode_literals
+import sys
+
+from mayavi import mlab
+
+from fipy.viewers.mayaviViewer.mayaviDaemon import MayaviDaemon
+
+class SphereDaemon(MayaviDaemon):
+
+    def __init__(self, datamin=0.0, datamax=1.0, *args, **kwargs):
+        # First, store these attributes
+        self.datamin = datamin
+        self.datamax = datamax
+        # Then initialize the base class
+        super(SphereDaemon, self).__init__(*args, **kwargs)
+
+    def view_data(self):
+        """Sets up the Mayavi pipeline for the visualization.
+        """
+        var = mlab.pipeline.set_active_attribute(self.cellsource, cell_scalars=r"$\phi$")
+
+        if hasattr(mlab.pipeline, "data_set_clipper"):
+            clip = mlab.pipeline.data_set_clipper(var)
+
+            clip.widget.widget_mode = 'Box'
+            clip.widget.widget.place_factor = 1.
+            clip.widget.widget.place_widget(0, 10, 0, 10, 0, 10)
+            clip.widget.update_implicit_function()
+
+            clip.widget.visible = False
+        else:
+            import warnings
+            warnings.warn("Mayavi r24017 or newer needed for data_set_clipper()", UserWarning, stacklevel=2)
+            clip = var
+
+        s = mlab.pipeline.surface(clip, vmin=self.datamin, vmax=self.datamax, colormap='hot')
+        s.module_manager.scalar_lut_manager.show_scalar_bar = True
+
+
+def main(argv=None):
+    """Simple helper to start up the Mayavi application.  This returns
+    the running application."""
+    m = SphereDaemon()
+    m.main(argv)
+    return m
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
